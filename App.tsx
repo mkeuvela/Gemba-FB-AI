@@ -4,7 +4,6 @@ import { Sidebar } from './components/Sidebar';
 import { TopicDetail } from './components/TopicDetail';
 import { DashboardData, Topic } from './types';
 import { INITIAL_DATA, STORAGE_KEY } from './constants';
-import { v4 as uuidv4 } from 'uuid'; // Since we can't use uuid package easily in this snippet, I will implement a simple helper
 
 // Simple unique ID generator helper to avoid external deps for this demo
 const generateId = () => Math.random().toString(36).substr(2, 9);
