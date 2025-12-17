@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Topic, Update } from '../types';
 
 interface TopicDetailProps {
@@ -6,6 +6,7 @@ interface TopicDetailProps {
   isEditMode: boolean;
   onAddUpdate: (topicId: string, title: string, text: string) => void;
   onEditUpdate: (topicId: string, updateId: string, title: string, text: string) => void;
+  onReorderUpdates: (topicId: string, updates: Update[]) => void;
   onDeleteUpdate: (topicId: string, updateId: string) => void;
 }
 
@@ -70,6 +71,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
   isEditMode,
   onAddUpdate,
   onEditUpdate,
+  onReorderUpdates,
   onDeleteUpdate,
 }) => {
   // State for adding new item
@@ -83,6 +85,10 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
   
   // State for image handling to force re-render on error
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE);
+
+  // Drag and drop refs
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   // Update image source when topic changes
   useEffect(() => {
@@ -128,6 +134,48 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
       onEditUpdate(topic.id, updateId, editTitle.trim(), editText.trim());
       cancelEditing();
     }
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    dragItem.current = position;
+    // Transparent ghost image effect
+    e.dataTransfer.effectAllowed = "move";
+    e.currentTarget.classList.add('opacity-50');
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+    dragOverItem.current = position;
+    e.preventDefault();
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.classList.remove('opacity-50');
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('opacity-50');
+
+    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+      return;
+    }
+
+    const copyListItems = [...topic.updates];
+    const dragItemContent = copyListItems[dragItem.current];
+    
+    // Remove item from old position
+    copyListItems.splice(dragItem.current, 1);
+    // Insert item at new position
+    copyListItems.splice(dragOverItem.current, 0, dragItemContent);
+    
+    // Update parent
+    onReorderUpdates(topic.id, copyListItems);
+
+    dragItem.current = null;
+    dragOverItem.current = null;
   };
 
   return (
@@ -211,10 +259,19 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
 
           {topic.updates.length > 0 ? (
             <div className="space-y-8">
-              {topic.updates.map((update) => (
-                <div key={update.id} className="relative group">
+              {topic.updates.map((update, index) => (
+                <div 
+                  key={update.id} 
+                  className={`relative group ${isEditMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  draggable={isEditMode}
+                  onDragStart={(e) => isEditMode && handleDragStart(e, index)}
+                  onDragEnter={(e) => isEditMode && handleDragEnter(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()} // Necessary for drop to work
+                >
                    {editingId === update.id ? (
-                    <div className="bg-white p-5 rounded-xl border border-avans-orange shadow-md">
+                    <div className="bg-white p-5 rounded-xl border border-avans-orange shadow-md relative z-20">
                        <div className="mb-3">
                           <label className="block text-xs font-medium text-gray-500 mb-1">Titel</label>
                           <input
@@ -243,9 +300,17 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
                        </div>
                     </div>
                   ) : (
-                    <div className="bg-white rounded-xl">
+                    <div className="bg-white rounded-xl transition-all duration-200">
+                      
+                      {/* Drag Handle Overlay */}
+                      {isEditMode && (
+                        <div className="absolute -left-8 top-1 h-full flex items-start pt-1 text-gray-300 group-hover:text-avans-orange transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                        </div>
+                      )}
+
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-bold text-avans-blue leading-tight">
+                        <h3 className="text-xl font-bold text-avans-blue leading-tight select-none">
                           {update.title}
                         </h3>
                         
@@ -273,7 +338,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
                         )}
                       </div>
                       {update.text && (
-                        <p className="text-gray-700 leading-relaxed text-base font-normal border-l-4 border-gray-100 pl-4">
+                        <p className="text-gray-700 leading-relaxed text-base font-normal border-l-4 border-gray-100 pl-4 select-none">
                           {update.text}
                         </p>
                       )}

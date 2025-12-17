@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { TopicDetail } from './components/TopicDetail';
-import { DashboardData, Topic } from './types';
+import { DashboardData, Topic, Update } from './types';
 import { INITIAL_DATA } from './constants';
 import { db } from './firebaseConfig';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -153,6 +153,28 @@ const App: React.FC = () => {
     saveDataToFirebase(newData);
   };
 
+  const handleReorderUpdates = (topicId: string, newUpdates: Update[]) => {
+    const currentTopics = data[activeCategory].topics;
+    const updatedTopics = currentTopics.map(topic => {
+      if (topic.id === topicId) {
+        return {
+          ...topic,
+          updates: newUpdates
+        };
+      }
+      return topic;
+    });
+
+    const newData = {
+      ...data,
+      [activeCategory]: {
+        ...data[activeCategory],
+        topics: updatedTopics
+      }
+    };
+    saveDataToFirebase(newData);
+  };
+
   const handleDeleteUpdate = (topicId: string, updateId: string) => {
     const currentTopics = data[activeCategory].topics;
     const updatedTopics = currentTopics.map(topic => {
@@ -220,6 +242,7 @@ const App: React.FC = () => {
             isEditMode={isEditMode}
             onAddUpdate={handleAddUpdate}
             onEditUpdate={handleEditUpdate}
+            onReorderUpdates={handleReorderUpdates}
             onDeleteUpdate={handleDeleteUpdate}
           />
         </div>
