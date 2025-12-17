@@ -6,13 +6,15 @@ interface HeaderProps {
   onCategoryChange: (id: 'rtb' | 'projects') => void;
   isEditMode: boolean;
   onToggleEditMode: () => void;
+  isConnected?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   activeCategory, 
   onCategoryChange, 
   isEditMode, 
-  onToggleEditMode 
+  onToggleEditMode,
+  isConnected = false
 }) => {
   return (
     <header className="bg-avans-red text-white shadow-lg sticky top-0 z-50">
@@ -27,7 +29,19 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="font-heading text-3xl font-bold tracking-wide uppercase leading-none">
                 Gembawalk<span className="text-avans-purple"> FB AI</span>
               </h1>
-              <span className="text-white/80 text-xs uppercase tracking-widest font-medium">Dashboard</span>
+              <span className="text-white/80 text-xs uppercase tracking-widest font-medium flex items-center gap-2">
+                Dashboard
+                {isConnected ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-100 border border-green-500/50">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1 animate-pulse"></span>
+                    LIVE
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-100 border border-red-500/50">
+                     OFFLINE
+                  </span>
+                )}
+              </span>
             </div>
           </div>
 
